@@ -43,25 +43,25 @@ class PythonFinder(object):
 
 finder = PythonFinder()
 filename = finder.find_import()
-vim.command('return '+filename)
+vim.command('return "%s"' % (filename))
 EOF
 endfunction
 
-function! source#NewTab()
-    let filename = s:FindPythonSource
-    tabnew(filename)
+function! python#SourceTab()
+    let filename = s:FindPythonSource()
+    exec 'tabnew '.filename
 endfunction
 
-function! source#NewSpit()
-    let filename = s:FindPythonSource
-    split(filename)
-function
-
-function! source#NewVSplit()
-    let filename = s:FindPythonSource
-    vsplit(filename)
+function! python#SourceSplit()
+    let filename = s:FindPythonSource()
+    exec 'split '.filename
 endfunction
 
-nmap <leader>sft :call souce#NewTab()<CR>
-nmap <leader>sfs :call souce#NewTab()<CR>
-nmap <leader>sfv :call souce#NewTab()<CR>
+function! python#SourceVSplit()
+    let filename = s:FindPythonSource()
+    exec 'vsplit '.filename
+endfunction
+
+nmap <leader>sft :call python#SourceTab()<CR>
+nmap <leader>sfs :call python#SourceSplit()<CR>
+nmap <leader>sfv :call python#SourceVSplit()<CR>
