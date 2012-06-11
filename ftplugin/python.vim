@@ -16,7 +16,7 @@ import inspect
 import os
 import sys
 
-class PythonFinder(object):
+class SourceFinder(object):
 
     def get_import_file(self, module, attributes=[], **kwargs):
         new_object = __import__(module, globals(), locals(), attributes, -1)
@@ -46,7 +46,7 @@ class PythonFinder(object):
         else:
             print "Cant open docs for this"
 
-finder = PythonFinder()
+finder = SourceFinder()
 filename = finder.find_import()
 
 if filename:
