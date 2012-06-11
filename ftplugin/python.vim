@@ -1,3 +1,9 @@
+" pysource.vim - Find python source intelligently
+" Maintainer: Colin Wood <cwood06 at gmail dot com>
+" Version: 0.2.0a
+" Bugs: Relative imports not opening up okay
+" License: Same as Vim
+
 if has('g:pysource_loaded')
     finish
 endif
