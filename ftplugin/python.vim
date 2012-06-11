@@ -18,10 +18,14 @@ import sys
 
 class PythonFinder(object):
 
-    def get_import_file(self, module, attributes=None, **kwargs):
-        new_object = __import__(module, globals(), locals(), [attributes], -1)
+    def get_import_file(self, module, attributes=[], **kwargs):
+        new_object = __import__(module, globals(), locals(), attributes, -1)
         from_file = inspect.getfile(new_object)
-        return from_file[:-1]
+
+        if from_file.endswith('.pyc'):
+            return from_file[:-1]
+        elif from_file.endswith('.py'):
+            return from_file
 
     def get_line(self):
         return vim.current.line
@@ -33,17 +37,20 @@ class PythonFinder(object):
 
             if line.startswith('from'):
                 statment, module, importer, attribute = line.split(' ')
+                attributes = attribute.split(',')
             else:
                 statement, module = line.split(' ')
-                attribute = None
+                attributes = []
 
-            return self.get_import_file(module, attributes=attribute)
+            return self.get_import_file(module, attributes=attributes)
         else:
             print "Cant open docs for this"
 
 finder = PythonFinder()
 filename = finder.find_import()
-vim.command('return "%s"' % (filename))
+
+if filename:
+    vim.command('return "%s"' % (filename))
 EOF
 endfunction
 
