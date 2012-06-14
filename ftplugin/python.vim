@@ -25,16 +25,8 @@ import re
 
 class SourceFinder(object):
 
-    def __init__(self):
-
-        if '.' not in sys.path:
-            sys.path.append('.')
-
-        if '..' not in sys.path:
-            sys.path.append('..')
-
     def get_import_file(self, module, attributes=None, **kwargs):
-        print attributes
+
         try:
             new_object = __import__(module, globals(), locals(), attributes,
                                     -1)
@@ -61,8 +53,12 @@ class SourceFinder(object):
             module = None
 
         if module.startswith('.'):
-             module = module[1:]
+            paths = module.split('.')
+            module = paths[-1]
+            path = '.'.join(paths[0:-1])+'.'
 
+            if path not in sys.path:
+                sys.path.append(path)
         try:
             attributes = parts[3]
             attributes = attributes.split(',')
@@ -72,7 +68,7 @@ class SourceFinder(object):
         for i, attribute in enumerate(attributes):
             attributes[i] = re.sub(r'\s', '', attribute)
 
-        return self.get_import_file(module, attributes=attributes)
+        return self.get_import_file(module, attributes=attributes, relative=relative)
 
 finder = SourceFinder()
 filename = finder.find_import()
