@@ -21,15 +21,25 @@ import vim
 import inspect
 import os
 import sys
+import re
 
 class SourceFinder(object):
 
-    def get_import_file(self, module, attributes=[], **kwargs):
+    def __init__(self):
 
+        if '.' not in sys.path:
+            sys.path.append('.')
+
+        if '..' not in sys.path:
+            sys.path.append('..')
+
+    def get_import_file(self, module, attributes=None, **kwargs):
+        print attributes
         try:
-            new_object = __import__(module, globals(), locals(), attributes, -1)
-        except:
-            return ''
+            new_object = __import__(module, globals(), locals(), attributes,
+                                    -1)
+        except Exception, e:
+            return e
 
         from_file = inspect.getfile(new_object)
 
@@ -43,18 +53,24 @@ class SourceFinder(object):
 
     def find_import(self):
         line = self.get_line()
-        parts = line.split(' ')
+        parts = line.split(' ', 3)
 
         try:
             module = parts[1]
         except KeyError:
             module = None
 
+        if module.startswith('.'):
+             module = module[1:]
+
         try:
             attributes = parts[3]
             attributes = attributes.split(',')
         except KeyError:
             attributes = []
+
+        for i, attribute in enumerate(attributes):
+            attributes[i] = re.sub(r'\s', '', attribute)
 
         return self.get_import_file(module, attributes=attributes)
 
@@ -69,8 +85,8 @@ endfunction
 function! python#Source(type)
     let filename = s:FindPythonSource()
 
-    if filename == ''
-        echoerr "Could not open source"
+    if !filereadable(filename)
+        echoerr "Could not open source. ".filename
     else
         if a:type == 'tab'
             exec 'tabnew '.filename
