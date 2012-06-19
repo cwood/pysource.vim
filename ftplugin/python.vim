@@ -31,7 +31,15 @@ class SourceFinder(object):
             new_object = __import__(module, globals(), locals(), attributes,
                                     -1)
         except Exception, e:
-            return e
+
+            if not hasattr(self, 'relative'):
+                return e
+
+        if hasattr(self, 'relative'):
+            if os.path.exists(os.path.join(self.relative_path, module+'.py')):
+                return os.path.join(self.relative_path, module+'.py')
+            else:
+                return ''
 
         from_file = inspect.getfile(new_object)
 
@@ -59,6 +67,10 @@ class SourceFinder(object):
 
             if path not in sys.path:
                 sys.path.append(path)
+
+            self.relative = True
+            self.relative_path = path
+
         try:
             attributes = parts[3]
             attributes = attributes.split(',')
@@ -68,7 +80,7 @@ class SourceFinder(object):
         for i, attribute in enumerate(attributes):
             attributes[i] = re.sub(r'\s', '', attribute)
 
-        return self.get_import_file(module, attributes=attributes, relative=relative)
+        return self.get_import_file(module, attributes=attributes)
 
 finder = SourceFinder()
 filename = finder.find_import()
