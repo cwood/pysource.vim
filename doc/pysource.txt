@@ -34,12 +34,10 @@ can feel free to call the function.
 ==============================================================================
 3. Function(s)                                              *pysource-functions*
 
-Pysource declares three functions which corrilate to the mappings seen in
-|pysource-mappings|.
+Pysource declares one function. It takes one arguments. Which are tab,
+vsplit, and split.
 
-        * *python#SourceSplit()*
-        * *python#SourceVSplit()*
-        * *python#SourceTab()*
+        * *python#Source()*
 
 ==============================================================================
 4. Contributing                                          *pysource-contributing*
