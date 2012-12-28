@@ -7,14 +7,13 @@ if has('g:pysource_loaded')
     finish
 endif
 
-let g:pysource_loaded = 1
-
 if !has('python')
     echoerr 'Missing python'
     finish
 endif
 
-function! s:FindPythonSource()
+let g:pysource_loaded = 1
+
 python << EOF
 import vim
 import inspect
@@ -22,67 +21,94 @@ import os
 import sys
 import re
 
+
+def parse_import_line(line):
+
+    parts, is_relative, relative_path = (line.split(' ', 3), False, None)
+
+    try:
+        module = parts[1]
+    except KeyError:
+        module = None
+
+    if module.startswith('.'):
+        paths = module.split('.')
+        module = paths[-1]
+        path = '.'.join(paths[0:-1])+'.'
+
+        if path not in sys.path:
+            sys.path.append(path)
+
+        is_relative = True
+        relative_path = path
+
+    try:
+        attributes = parts[3]
+        attributes = attributes.split(',')
+    except (IndexError, KeyError):
+        attributes = ['']
+
+    for i, attribute in enumerate(attributes):
+        attributes[i] = re.sub(r'\s', '', attribute)
+
+    return module, attributes, is_relative, relative_path
+
+
 class SourceFinder(object):
 
-    def get_import_file(self, module, attributes=None, **kwargs):
+    def __init__(self, module, is_relative=False, relative_path=None,
+                *attributes):
+
+        self.module = module
+
+        if attributes:
+            self.attributes =  attributes
+        else:
+            self.attributes = ['']
+
+        self.is_relative = is_relative
+        self.relative_path = relative_path
+
+    def get_import_file(self, **kwargs):
+        new_object = None
 
         try:
-            new_object = __import__(module, globals(), locals(), attributes,
-                                    -1)
+            new_object = __import__(self.module, globals(),
+                                    locals(), self.attributes, -1)
         except Exception, e:
 
-            if not hasattr(self, 'relative'):
+            if not getattr(self, 'is_relative', False):
                 return e
 
-        if hasattr(self, 'relative'):
-            if os.path.exists(os.path.join(self.relative_path, module+'.py')):
-                return os.path.join(self.relative_path, module+'.py')
+        if getattr(self, 'is_relative', False):
+            if os.path.exists(os.path.join(self.relative_path, self.module+'.py')):
+                return os.path.join(self.relative_path, self.module+'.py')
             else:
                 return ''
 
-        from_file = inspect.getfile(new_object)
+        if new_object:
+            from_file = inspect.getfile(new_object)
 
-        if from_file.endswith('.pyc'):
-            return from_file[:-1]
-        elif from_file.endswith('.py'):
-            return from_file
+            if from_file:
+                if from_file.endswith('.pyc'):
+                    return from_file[:-1]
+                elif from_file.endswith('.py'):
+                    return from_file
 
-    def get_line(self):
-        return vim.current.line
+        return None
 
-    def find_import(self):
-        line = self.get_line()
-        parts = line.split(' ', 3)
+EOF
 
-        try:
-            module = parts[1]
-        except KeyError:
-            module = None
 
-        if module.startswith('.'):
-            paths = module.split('.')
-            module = paths[-1]
-            path = '.'.join(paths[0:-1])+'.'
+function! s:FindPythonSourceFromLine()
+python << EOF
+import vim
+module, attributes, is_relative, relative_path = parse_import_line(vim.current.line)
+finder = SourceFinder(module, is_relative, relative_path, *attributes)
+filename = finder.get_import_file()
 
-            if path not in sys.path:
-                sys.path.append(path)
-
-            self.relative = True
-            self.relative_path = path
-
-        try:
-            attributes = parts[3]
-            attributes = attributes.split(',')
-        except KeyError:
-            attributes = []
-
-        for i, attribute in enumerate(attributes):
-            attributes[i] = re.sub(r'\s', '', attribute)
-
-        return self.get_import_file(module, attributes=attributes)
-
-finder = SourceFinder()
-filename = finder.find_import()
+if isinstance(filename, Exception):
+    vim.commaned('echoerr "Problem finding source: %s"' %(str(filename)))
 
 if filename:
     vim.command('return "%s"' % (filename))
@@ -90,7 +116,7 @@ EOF
 endfunction
 
 function! python#Source(type)
-    let filename = s:FindPythonSource()
+    let filename = s:FindPythonSourceFromLine()
 
     if !filereadable(filename)
         echoerr "Could not open source. ".filename
@@ -105,6 +131,28 @@ function! python#Source(type)
     endif
 endfunction
 
+function! python#findsource(pythonpath, ...)
+python << EOF
+import vim
+import os
+
+python_path_string = vim.eval('a:pythonpath')
+
+finder = SourceFinder(python_path_string)
+filename = finder.get_import_file()
+
+if isinstance(filename, Exception):
+    vim.command('echoerr "Got error: %s"' % (str(filename)))
+elif filename and os.path.exists(filename):
+    vim.command('edit %s' % (filename) )
+else:
+    vim.command('echoerr "Couldnt find source for %s"' % (python_path_string))
+EOF
+endfunction
+
+
 nmap <leader>sft :call python#Source('tab')<CR>
 nmap <leader>sfs :call python#Source('split')<CR>
 nmap <leader>sfv :call python#Source('vsplit')<CR>
+
+command! -nargs=1 PySource call python#findsource(<q-args>)
