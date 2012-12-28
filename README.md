@@ -16,7 +16,7 @@ If you know the module you want to edit you can use the `:PySource` command.
 
 Example:
 ```viml
-    :PySource django.views.generic.list
+:PySource django.views.generic.list
 ```
 How-To
 ------------------------
