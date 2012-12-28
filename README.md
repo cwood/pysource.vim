@@ -9,7 +9,15 @@ Mappings
 ``<leader>sfs`` opens up source in a new split
 ``<leader>sfv`` opens up source in a new vertical split
 
+Commands
+------------------------
 
+If you know the module you want to edit you can use the `:PySource` command.
+
+Example:
+```viml
+    :PySource django.views.generic.list
+```
 How-To
 ------------------------
 
